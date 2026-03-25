@@ -56,7 +56,7 @@ export async function POST(request) {
 
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json({ error: "Falló la generación. Asegúrate de que la foto no sea mayor a 4MB y vuelve a intentarlo." }, { status: 500 });
+    return NextResponse.json({ error: `🚨 Error del robot: ${error.message || "Desconocido. Revisa tu saldo de Replicate."}` }, { status: 500 });
   }
 }
 
