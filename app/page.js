@@ -18,9 +18,6 @@ export default function Home() {
           <Link href="/login" className="btn-primary">
             Get Started
           </Link>
-          <Link href="/editor" className={styles.secondaryBtn}>
-            Try Editor
-          </Link>
         </div>
       </div>
       

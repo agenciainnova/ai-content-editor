@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const compressImage = (file, maxDim = 1024) => {
+const compressImage = (file, maxDim = 2048) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = URL.createObjectURL(file);
@@ -23,7 +23,7 @@ const compressImage = (file, maxDim = 1024) => {
       canvas.toBlob((blob) => {
         if (!blob) return reject(new Error("Compression failed"));
         resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
-      }, "image/jpeg", 0.85);
+      }, "image/jpeg", 0.95);
     };
     img.onerror = error => reject(error);
   });
@@ -42,7 +42,7 @@ export default function EditorClient() {
     if (selectedFile) {
       setLoading(true);
       try {
-        const compressedFile = await compressImage(selectedFile, 1024);
+        const compressedFile = await compressImage(selectedFile, 2048);
         setFile(compressedFile);
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -100,17 +100,22 @@ export default function EditorClient() {
 
         <div>
           <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Aspect Ratio</h3>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            {["original", "4:3", "16:9"].map(ratio => (
-              <label key={ratio} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            {[
+              { id: "original", label: "Original" },
+              { id: "1600:1200", label: "Landscape (16x12)" },
+              { id: "1:1", label: "Square (1:1)" },
+              { id: "4:3", label: "Classic (4:3)" }
+            ].map(ratio => (
+              <label key={ratio.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '8px', border: '1px solid var(--border-color)', borderRadius: '8px', background: aspectRatio === ratio.id ? 'rgba(255, 42, 95, 0.1)' : 'transparent' }}>
                 <input 
                   type="radio" 
                   name="ratio" 
-                  value={ratio} 
-                  checked={aspectRatio === ratio}
+                  value={ratio.id} 
+                  checked={aspectRatio === ratio.id}
                   onChange={(e) => setAspectRatio(e.target.value)}
                 />
-                {ratio.toUpperCase()}
+                <span style={{ fontSize: '0.9rem' }}>{ratio.label}</span>
               </label>
             ))}
           </div>
