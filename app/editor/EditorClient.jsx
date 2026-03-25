@@ -104,7 +104,7 @@ export default function EditorClient() {
             {[
               { id: "original", label: "Original" },
               { id: "1600:1200", label: "Landscape (16x12)" },
-              { id: "1:1", label: "Square (1:1)" },
+              { id: "16:9", label: "Widescreen (16:9)" },
               { id: "4:3", label: "Classic (4:3)" }
             ].map(ratio => (
               <label key={ratio.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '8px', border: '1px solid var(--border-color)', borderRadius: '8px', background: aspectRatio === ratio.id ? 'rgba(255, 42, 95, 0.1)' : 'transparent' }}>

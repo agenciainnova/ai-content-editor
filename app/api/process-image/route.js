@@ -59,6 +59,9 @@ export async function POST(request) {
     if (aspectRatio === "1600:1200" || aspectRatio === "4:3") {
       width = 1024;
       height = 768;
+    } else if (aspectRatio === "16:9") {
+      width = 1344;
+      height = 768;
     }
 
     const output = await replicate.run(
