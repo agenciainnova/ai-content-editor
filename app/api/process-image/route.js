@@ -41,7 +41,7 @@ export async function POST(request) {
     // STEP 1: Remove background to create the mask for the model
     // This allows us to strictly "not touch" the model as requested
     const bgRemovalOutput = await replicate.run(
-      "lucataco/remove-bg:95f71f642f61bc7b605809d43ef08cdd1eb024765d7741d4062dc77977464082",
+      "lucataco/remove-bg:95fcc2a2af5287f7158300ce4826b68ed9d31c024765d7741d4062dc7797746",
       {
         input: {
           image: base64Image
@@ -65,18 +65,16 @@ export async function POST(request) {
     }
 
     const output = await replicate.run(
-      "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+      "lucataco/sdxl-inpainting:a5b13068cc81a89a4fbeefeccc774869fcb34df4dbc92c1555e0f2771d49dde7",
       {
         input: {
           image: base64Image,
           mask: transparentImage, // This defines what pixels belong to the model
           prompt: `High-end professional photoshoot background, ${prompt || "luxurious blurred setting"}, realistic, cinematic lighting, 8k`,
           negative_prompt: "cartoon, anime, blurry, low resolution, multiple people, face distortion",
-          prompt_strength: 0.99, // Only affects the masked area (background)
           width: width,
           height: height,
-          num_outputs: 1,
-          apply_watermark: false
+          num_outputs: 1
         }
       }
     );
