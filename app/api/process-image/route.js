@@ -41,7 +41,7 @@ export async function POST(request) {
     // STEP 1: Remove background to create the mask for the model
     // This allows us to strictly "not touch" the model as requested
     const bgRemovalOutput = await replicate.run(
-      "lucataco/remove-bg:95fcc2a2af5287f7158300ce4826b68ed9d31c024765d7741d4062dc7797746",
+      "lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285a65c14638cc5f36f34befaf1",
       {
         input: {
           image: base64Image
