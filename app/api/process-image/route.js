@@ -3,6 +3,8 @@ import { authOptions } from "../auth/[...nextauth]/route";
 import { NextResponse } from "next/server";
 import Replicate from "replicate";
 
+export const maxDuration = 60; // Allow 60 seconds for AI processing
+
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,7 +15,6 @@ export async function POST(request) {
     const formData = await request.formData();
     const image = formData.get("image");
     const prompt = formData.get("prompt");
-    const aspectRatio = formData.get("aspectRatio");
 
     if (!image) return NextResponse.json({ error: "No image provided" }, { status: 400 });
 
@@ -22,24 +23,33 @@ export async function POST(request) {
     const base64Image = `data:${mimeType};base64,${buffer.toString("base64")}`;
 
     if (!process.env.REPLICATE_API_TOKEN) {
-      console.log("Mocking Replicate API call triggered by:", prompt);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return NextResponse.json({ resultUrl: base64Image });
+      return NextResponse.json({ error: "Replicate token is missing" }, { status: 500 });
     }
 
     const replicate = new Replicate({
       auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    // Here we would call the specific uncensored/background model
-    // output = await replicate.run("model-id", { input: { image: base64Image, prompt } })
+    // Calling SDXL for high-quality image enhancement / modification
+    const output = await replicate.run(
+      "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+      {
+        input: {
+          image: base64Image,
+          prompt: prompt || "Professional highly detailed photo",
+          prompt_strength: 0.65, // Balance between original photo and AI prompt
+          num_outputs: 1
+        }
+      }
+    );
+
+    const resultUrl = Array.isArray(output) ? output[0] : output;
     
-    // For now returning mock until user configures the specific model ID they want
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    return NextResponse.json({ resultUrl: base64Image });
+    return NextResponse.json({ resultUrl });
 
   } catch (error) {
     console.error("API Error:", error);
-    return NextResponse.json({ error: "Failed to process image" }, { status: 500 });
+    return NextResponse.json({ error: "Falló la generación. Asegúrate de que la foto no sea mayor a 4MB y vuelve a intentarlo." }, { status: 500 });
   }
 }
+
