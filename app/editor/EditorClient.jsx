@@ -2,6 +2,33 @@
 
 import { useState } from "react";
 
+const compressImage = (file, maxDim = 1024) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else if (height > maxDim) {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error("Compression failed"));
+        resolve(new File([blob], file.name, { type: "image/jpeg", lastModified: Date.now() }));
+      }, "image/jpeg", 0.85);
+    };
+    img.onerror = error => reject(error);
+  });
+};
+
 export default function EditorClient() {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -10,13 +37,23 @@ export default function EditorClient() {
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
-      setFile(selectedFile);
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result);
-      reader.readAsDataURL(selectedFile);
+      setLoading(true);
+      try {
+        const compressedFile = await compressImage(selectedFile, 1024);
+        setFile(compressedFile);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreview(reader.result);
+          setLoading(false);
+        };
+        reader.readAsDataURL(compressedFile);
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
+      }
     }
   };
 
