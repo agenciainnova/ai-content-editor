@@ -36,6 +36,7 @@ export default function EditorClient() {
   const [prompt, setPrompt] = useState("");
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [hordeStatus, setHordeStatus] = useState("");
 
   const handleImageChange = async (e) => {
     const selectedFile = e.target.files[0];
@@ -60,29 +61,104 @@ export default function EditorClient() {
   const processImage = async () => {
     if (!file) return;
     setLoading(true);
-    
-    // In a real scenario, upload the file as base64 or FormData
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("prompt", prompt);
-    formData.append("aspectRatio", aspectRatio);
+    setResultImage(null);
+    setHordeStatus("Preparando imagen...");
 
     try {
-      const response = await fetch("/api/process-image", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await response.json();
-      if (data.resultUrl) {
-        setResultImage(data.resultUrl);
-      } else {
-        alert(data.error || "Failed to process image.");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Error processing image.");
-    } finally {
+      // 1. Encojemos la foto localmente primero para AI Horde
+      const compressedFile = await compressImage(file, 512); 
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        const base64Data = reader.result.split(',')[1];
+        setHordeStatus("Conectando con La Horda...");
+
+        try {
+          // 2. Enviar petición a AI Horde
+          const submitResponse = await fetch("https://aihorde.net/api/v2/generate/async", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": "0000000000",
+              "Client-Agent": "InnovaEditor:1.0:unknown"
+            },
+            body: JSON.stringify({
+              prompt: prompt || "professional photorealistic, high quality, 8k",
+              nsfw: true,
+              censor_nsfw: false,
+              source_image: base64Data,
+              source_processing: "img2img",
+              params: {
+                sampler_name: "k_euler_a",
+                steps: 25,
+                width: 512,
+                height: 512,
+                denoising_strength: 0.75
+              }
+            })
+          });
+
+          const submitData = await submitResponse.json();
+
+          if (!submitResponse.ok || !submitData.id) {
+            alert("Error conectando a la Horda: " + (submitData.message || "Desconocido"));
+            setLoading(false);
+            setHordeStatus("");
+            return;
+          }
+
+          const jobId = submitData.id;
+
+          // 3. Crear el ciclo de consulta (Polling) cada 5 segundos
+          const checkStatus = async () => {
+            try {
+              const checkRes = await fetch(`https://aihorde.net/api/v2/generate/check/${jobId}`);
+              const checkData = await checkRes.json();
+
+              if (checkData.done) {
+                setHordeStatus("¡Imagen renderizada! Descargando...");
+                const resultRes = await fetch(`https://aihorde.net/api/v2/generate/status/${jobId}`);
+                const resultData = await resultRes.json();
+
+                if (resultData.generations && resultData.generations.length > 0) {
+                  setResultImage(resultData.generations[0].img);
+                } else {
+                  alert("Error: La Horda no devolvió ninguna imagen.");
+                }
+                setLoading(false);
+                setHordeStatus("");
+              } else {
+                if (checkData.waiting > 0) {
+                  setHordeStatus(`Fila de espera de La Horda... Estás de número: ${checkData.waiting || 1}`);
+                } else if (checkData.processing > 0) {
+                  setHordeStatus("¡Computadora encontrada! Renderizando píxeles (esto toma ~30segs)...");
+                } else {
+                  setHordeStatus("Buscando computadora voluntaria disponible...");
+                }
+                setTimeout(checkStatus, 5000);
+              }
+            } catch (err) {
+              console.error("Error validando estado", err);
+              setTimeout(checkStatus, 5000);
+            }
+          };
+
+          checkStatus();
+
+        } catch (serverErr) {
+          console.error(serverErr);
+          alert("Error crítico conectando a la Horda.");
+          setLoading(false);
+          setHordeStatus("");
+        }
+      };
+      reader.readAsDataURL(compressedFile);
+
+    } catch (e) {
+      console.error(e);
+      alert("Error comprimiendo imagen.");
       setLoading(false);
+      setHordeStatus("");
     }
   };
 
@@ -152,7 +228,7 @@ export default function EditorClient() {
           <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Result</h3>
           <div className="glass-panel" style={{ width: '100%', aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: loading ? 'rgba(255, 42, 95, 0.1)' : 'var(--surface-color)' }}>
             {loading ? (
-              <div className="animate-fade-in" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>Applying AI magic...</div>
+              <div className="animate-fade-in" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{hordeStatus || "Consultando con la Horda..."}</div>
             ) : resultImage ? (
               <img src={resultImage} alt="Result" className="animate-fade-in" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
