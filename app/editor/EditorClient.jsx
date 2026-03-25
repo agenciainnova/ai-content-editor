@@ -36,7 +36,6 @@ export default function EditorClient() {
   const [prompt, setPrompt] = useState("");
   const [resultImage, setResultImage] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [hordeStatus, setHordeStatus] = useState("");
 
   const handleImageChange = async (e) => {
     const selectedFile = e.target.files[0];
@@ -155,7 +154,7 @@ export default function EditorClient() {
           <h3 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Result</h3>
           <div className="glass-panel" style={{ width: '100%', aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: loading ? 'rgba(255, 42, 95, 0.1)' : 'var(--surface-color)' }}>
             {loading ? (
-              <div className="animate-fade-in" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>{hordeStatus || "Consultando con la Horda..."}</div>
+              <div className="animate-fade-in" style={{ color: 'var(--primary-color)', fontWeight: 600 }}>Processing AI Magic...</div>
             ) : resultImage ? (
               <img src={resultImage} alt="Result" className="animate-fade-in" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
