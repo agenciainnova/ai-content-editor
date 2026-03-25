@@ -66,7 +66,7 @@ export default function EditorClient() {
 
     try {
       // 1. Encojemos la foto localmente primero para AI Horde
-      const compressedFile = await compressImage(file, 768); 
+      const compressedFile = await compressImage(file, 512); 
       const reader = new FileReader();
 
       reader.onloadend = async () => {
@@ -91,8 +91,8 @@ export default function EditorClient() {
               params: {
                 sampler_name: "k_euler_a",
                 steps: 25,
-                width: 768,
-                height: 768,
+                width: 512,
+                height: 512,
                 denoising_strength: 0.75
               }
             })
